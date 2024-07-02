@@ -1,0 +1,69 @@
+﻿@page "/SearchProducts"
+@inject IProductService ProductService
+
+<h3>Search Products</h3>
+
+<div class="search-container">
+    <input type="text" @bind="searchTerm" placeholder="Enter search term" />
+    <button @onclick="PerformSearch">Tìm kiếm</button>
+</div>
+
+@if (errorMessage != null)
+{
+    <p class="text-danger">@errorMessage</p>
+}
+else if (products != null)
+{
+    @if (products.Any())
+    {
+        <div class="row mt-4">
+            @foreach (var product in products)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <img src="@product.ImageURL" class="card-img-top" alt="@product.Name" />
+                        <div class="card-body">
+                            <h5 class="card-title">@product.Name</h5>
+                            <p class="card-text">@product.Description</p>
+                            <p class="card-text"><strong>@product.Price.ToString("C")</strong> (@product.Qty items in stock)</p>
+                            <button class="btn btn-success">Add to Cart</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p>Sản phẩm này không tồn tại.</p>
+    }
+}
+
+@code {
+    private string searchTerm;
+    private IEnumerable<ProductDto> products;
+    private string errorMessage;
+
+    private async Task PerformSearch()
+    {
+        try
+        {
+            products = await ProductService.SearchItems(searchTerm);
+            errorMessage = null;
+            if (!products.Any())
+            {
+                products = new List<ProductDto>(); // Đảm bảo `products` không bị null
+                errorMessage = "Sản phẩm này không tồn tại.";
+            }
+        }
+        catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            errorMessage = "Sản phẩm này không tồn tại.";
+            products = null;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "SẢN PHẨM NÀY KHÔNG TỒN TẠI !";
+        }
+    }
+}
